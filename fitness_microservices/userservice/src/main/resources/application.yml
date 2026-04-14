@@ -11,3 +11,5 @@ spring :
        ddl_auto: update
        database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+server:
+  port: 8081
