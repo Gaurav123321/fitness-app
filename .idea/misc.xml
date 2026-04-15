@@ -6,6 +6,9 @@
       <list>
         <option value="$PROJECT_DIR$/fitness_microservices /userservice/pom.xml" />
         <option value="$PROJECT_DIR$/fitness_microservices /activityservice/pom.xml" />
+        <option value="$PROJECT_DIR$/fitness_microservices/activityservice/pom.xml" />
+        <option value="$PROJECT_DIR$/fitness_microservices/eureka/pom.xml" />
+        <option value="$PROJECT_DIR$/fitness_microservices/userservice/pom.xml" />
       </list>
     </option>
   </component>
