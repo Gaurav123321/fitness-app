@@ -3,7 +3,6 @@ spring:
     name: activityservice
   mongodb:
     uri: mongodb://localhost:27017/aiactivityfitness
-
   kafka:
     bootstrap-servers: localhost:9092
     producer:
