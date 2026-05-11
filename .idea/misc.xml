@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/fitness_microservices/eureka/pom.xml" />
         <option value="$PROJECT_DIR$/fitness_microservices/userservice/pom.xml" />
         <option value="$PROJECT_DIR$/fitness_microservices/aiservice/pom.xml" />
+        <option value="$PROJECT_DIR$/fitness_microservices/configserver/pom.xml" />
       </list>
     </option>
   </component>
