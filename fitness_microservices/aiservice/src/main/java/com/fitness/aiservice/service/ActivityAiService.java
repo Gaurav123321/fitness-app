@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,11 +20,39 @@ public class ActivityAiService {
 
     private final GeminiService geminiService;
 
-    public Recommendation generateRecommendation(Activity activity){
-        String prompt= createPromptActivity(activity);
-        String aiResponse= geminiService.getRecommendations(prompt);
-        log.info("RESPONSE FROM AI {}" , aiResponse);
-        return processAIResponse(activity,aiResponse);
+    public Recommendation generateRecommendation(Activity activity) {
+        String prompt = createPromptActivity(activity);
+        String aiResponse = geminiService.getRecommendations(prompt);
+        if (aiResponse == null || aiResponse.isBlank()) {
+            log.warn(
+                    "Using fallback for activity {} — set GEMINI_KEY and enable Generative Language API",
+                    activity.getId());
+            return buildFallbackRecommendation(activity);
+        }
+        log.info("Using Gemini AI recommendation for activity {}", activity.getId());
+        return processAIResponse(activity, aiResponse);
+    }
+
+    public Recommendation buildFallbackRecommendation(Activity activity) {
+        return Recommendation.builder()
+                .activityId(activity.getId())
+                .userId(activity.getUserId())
+                .type(activity.getType().toString())
+                .recommendation(String.format(
+                        "Overall: Good %s session for %d minutes with %d calories burned.%n%n"
+                                + "Keep a steady pace and stay hydrated.",
+                        activity.getType(), activity.getDuration(), activity.getCaloriesBurned()))
+                .improvements(List.of(
+                        "Gradually increase duration or intensity",
+                        "Track progress weekly"))
+                .suggestions(List.of(
+                        "Recovery walk: 15 minutes tomorrow",
+                        "Stretching: 10 minutes post-workout"))
+                .safety(List.of(
+                        "Warm up before exercise",
+                        "Stop if you feel pain or dizziness"))
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 
     private Recommendation processAIResponse(Activity activity, String aiResponse) {
@@ -69,28 +96,11 @@ public class ActivityAiService {
                 .safety(safety)
                 .createdAt(LocalDateTime.now())
                 .build();
-    }catch(Exception e){
-        e.printStackTrace();
-        return createDefaultRecommendation(activity);
+    } catch (Exception e) {
+        log.warn("Failed to parse Gemini JSON for activity {}, using fallback", activity.getId(), e);
+        return buildFallbackRecommendation(activity);
     }
 
-    }
-
-    private Recommendation createDefaultRecommendation(Activity activity) {
-        return Recommendation.builder()
-                .activityId(activity.getId())
-                .userId(activity.getUserId())
-                .type(activity.getType().toString())
-                .recommendation("Unable to generate detailed analysis")
-                .improvements(Collections.singletonList("Continue with your current routine"))
-                .suggestions(Collections.singletonList("Consider consulting a fitness professional"))
-                .safety(Arrays.asList(
-                        "Always warm up before exercise",
-                        "Stay hydrated",
-                        "Listen to your body"
-                ))
-                .createdAt(LocalDateTime.now())
-                .build();
     }
 
     private void addAnalysisSection(StringBuilder fullAnalysis, JsonNode analysisNode, String key, String prefix) {

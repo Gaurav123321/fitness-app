@@ -3,6 +3,12 @@ eureka:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
 
+keycloak:
+  token-url: http://localhost:8181/realms/fitness-app/protocol/openid-connect/token
+  client-id: fitness-frontend
+  # If your Keycloak client is confidential, set the secret here:
+  client-secret: ""
+
 spring:
   security:
     oauth2:

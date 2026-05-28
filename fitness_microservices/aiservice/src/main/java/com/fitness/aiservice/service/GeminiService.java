@@ -1,55 +1,83 @@
 package com.fitness.aiservice.service;
 
-import org.springframework.core.env.Environment;
+import com.fitness.aiservice.config.GeminiProperties;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.Map;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class GeminiService {
 
-    private static final String DEFAULT_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
     private final WebClient webClient;
-    private final String geminiApiUrl;
-    private final String geminiApiKey;
+    private final GeminiProperties geminiProperties;
 
-    public GeminiService(WebClient.Builder webClientBuilder, Environment env) {
-        this.webClient = webClientBuilder.build();
-        String url = env.getProperty("gemini.api.url", DEFAULT_API_URL);
-        if (url == null || url.isBlank() || isPlaceholderToken(url)) {
-            url = DEFAULT_API_URL;
+    @PostConstruct
+    void logGeminiStatus() {
+        if (geminiProperties.isConfigured()) {
+            log.info(
+                    "Gemini API configured (model={}, key=***{})",
+                    geminiProperties.getModel(),
+                    maskTail(geminiProperties.getKey()));
+        } else {
+            log.warn(
+                    "GEMINI_KEY is not set — set env GEMINI_KEY or add gemini.api.key in application-local.yml");
         }
-        this.geminiApiUrl = url;
-        this.geminiApiKey = env.getProperty("gemini.api.key", "");
     }
 
-    /** Raw config like {@code ${GEMINI_URL}} is never resolved by the client; fall back to default URL. */
-    private static boolean isPlaceholderToken(String value) {
-        return value.startsWith("${") && value.endsWith("}");
+    private static String maskTail(String key) {
+        if (key.length() <= 4) {
+            return "****";
+        }
+        return key.substring(key.length() - 4);
     }
 
     public String getRecommendations(String details) {
+        if (!geminiProperties.isConfigured()) {
+            return null;
+        }
+
+        String apiUrl = geminiProperties.resolveUrl();
 
         Map<String, Object> requestBody =
                 Map.of(
                         "contents",
                         new Object[] {
                             Map.of("parts", new Object[] {Map.of("text", details)})
-                        });
-        String response =
-                webClient
-                        .post()
-                        .uri(geminiApiUrl)
-                        .header("Content-Type", "application/json")
-                        .header("x-goog-api-key", geminiApiKey)
-                        .bodyValue(requestBody)
-                        .retrieve()
-                        .bodyToMono(String.class)
-                        .block();
+                        },
+                        "generationConfig",
+                        Map.of("temperature", 0.7, "maxOutputTokens", 2048));
 
-        return response;
+        try {
+            String response =
+                    webClient
+                            .post()
+                            .uri(apiUrl)
+                            .header("Content-Type", "application/json")
+                            .header("x-goog-api-key", geminiProperties.getKey())
+                            .bodyValue(requestBody)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .block();
+
+            log.info("Gemini API call succeeded for model {}", geminiProperties.getModel());
+            return response;
+        } catch (WebClientResponseException e) {
+            log.error(
+                    "Gemini API error {} for model {}: {}",
+                    e.getStatusCode(),
+                    geminiProperties.getModel(),
+                    e.getResponseBodyAsString());
+            return null;
+        } catch (Exception e) {
+            log.error("Gemini API call failed", e);
+            return null;
+        }
     }
 }

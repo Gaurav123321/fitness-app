@@ -1,0 +1,9 @@
+# Copy to application-local.yml and paste your API key (file is gitignored).
+# Get a key: https://aistudio.google.com/apikey
+#
+# cp application-local.yml.example application-local.yml
+
+gemini:
+  api:
+    model: gemini-2.0-flash
+    key: PASTE_YOUR_GEMINI_API_KEY_HERE

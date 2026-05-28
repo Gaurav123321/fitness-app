@@ -18,11 +18,21 @@ public class ActivityMessageListener {
     private final  ActivityAiService activityAiService;
     private final RecommendationRepository recommendationRepository;
 
-    @KafkaListener(topics = "${kafka.topic.name}",groupId="activity-processor-group")
+    @KafkaListener(topics = "${kafka.topic.name}", groupId = "activity-processor-group")
     public void processActivity(Activity activity) {
-        log.info("Received Activity for processing : {}", activity.getUserId());
-        Recommendation recommendation = activityAiService.generateRecommendation(activity);
-        recommendationRepository.save(recommendation);
+        log.info("Received activity for processing: {}", activity.getId());
+        try {
+            if (recommendationRepository.findByActivityId(activity.getId()).isPresent()) {
+                log.info("Recommendation already exists for activity {}", activity.getId());
+                return;
+            }
+            Recommendation recommendation = activityAiService.generateRecommendation(activity);
+            recommendationRepository.save(recommendation);
+            log.info("Saved recommendation for activity {}", activity.getId());
+        } catch (Exception e) {
+            log.error("Failed to process activity {}, saving fallback", activity.getId(), e);
+            recommendationRepository.save(activityAiService.buildFallbackRecommendation(activity));
+        }
     }
 
 }
