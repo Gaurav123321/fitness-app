@@ -14,8 +14,9 @@ spring:
 
 gemini:
   api:
-    url: ${GEMINI_URL}
-    key: ${GEMINI_KEY}
+    # Literal URL so startup does not depend on GEMINI_URL. Override with env GEMINI_API_URL if needed.
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+    key: ${GEMINI_KEY:}
 
 kafka:
   topic:

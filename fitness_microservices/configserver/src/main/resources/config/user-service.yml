@@ -7,9 +7,9 @@ spring :
     password: GY1@GY1@
 
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl_auto: update
-      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: update
 
 eureka:
   client:
